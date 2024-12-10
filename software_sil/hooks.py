@@ -248,7 +248,7 @@ fixtures = [
     "Custom Field",
     "Property Setter",
     "Print Format",
-    "DocType",
+    # "DocType",
     "Report",
     "Letter Head",
     "Workflow",
