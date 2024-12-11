@@ -1,4 +1,6 @@
 import frappe
+
+import frappe
 from io import BytesIO
 from openpyxl import Workbook
 from frappe import _
@@ -65,23 +67,24 @@ def format_posting_date(posting_date):
 
 
 def get_data(filters):
-    # print(f"filters :{filters}")
+    print(f"filters :{filters}")
     try:
         data = []
         
         conditions = []
-        if filters.custom_zonal_manager:
-            conditions.append(f"si.custom_zone = '{filters.custom_zonal_manager}'")
-        if filters.custom_regional_manager:
-            conditions.append(f"si.custom_regional_manager = '{filters.custom_regional_manager}'")
-        if filters.custom_cluster:
-            conditions.append(f"si.custom_cluster = '{filters.custom_cluster}'")
-        if filters.custom_cluster_manager:
-            conditions.append(f"si.custom_cluster_manager = '{filters.custom_cluster_manager}'")
-        if filters.customer_name:
-            conditions.append(f"si.customer = '{filters.customer_name}'")
-        if filters.starting_posting_date and filters.ending_posting_date:
-            conditions.append(f"si.posting_date BETWEEN '{filters.starting_posting_date}' AND '{filters.ending_posting_date}'")
+        if filters.get('custom_zonal_manager'):
+            conditions.append(f"si.custom_zone = '{filters['custom_zonal_manager']}'")
+        if filters.get('custom_regional_manager'):
+            conditions.append(f"si.custom_regional_manager = '{filters['custom_regional_manager']}'")
+        if filters.get('custom_cluster'):
+            conditions.append(f"si.custom_cluster = '{filters['custom_cluster']}'")
+        if filters.get('custom_cluster_manager'):
+            conditions.append(f"si.custom_cluster_manager = '{filters['custom_cluster_manager']}'")
+        if filters.get('customer_name'):
+            conditions.append(f"si.customer = '{filters['customer_name']}'")
+        if filters.get('starting_posting_date') and filters.get('ending_posting_date'):
+            conditions.append(f"si.posting_date BETWEEN '{filters['starting_posting_date']}' AND '{filters['ending_posting_date']}'")
+
         
         where_clause = " AND ".join(conditions) if conditions else "1=1"
 
@@ -317,80 +320,9 @@ def generate_and_download_sales_invoice_report(filters=None):
         return {"error": _("An error occurred: {0}").format(str(e))}    
 
 
-def convert_html_to_pdf(html_file, output_pdf):
-    try:
-        # Read the HTML file and convert to PDF
-        HTML(html_file).write_pdf(output_pdf)
-        print(f"Converted {html_file} to {output_pdf}")
-    except Exception as e:
-        print(f"Error: {e}")
-
-
-def attach_pdf_to_email(pdf_path, recipient_email):
-    try:
-        with open(pdf_path, "rb") as pdf_file:
-            pdf_content = pdf_file.read()
-            file_doc = save_file(
-                os.path.basename(pdf_path),
-                pdf_content,
-                doctype="File",
-                is_private=1
-            )
-            frappe.sendmail(
-                recipients=[recipient_email],
-                subject="Your PDF Report",
-                message="Please find the attached PDF report.",
-                attachments=[{
-                    "fname": file_doc.file_name,
-                    "fcontent": pdf_content
-                }]
-            )
-        frappe.msgprint(f"Email sent to {recipient_email}")
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Error in Sending Email")
-        frappe.throw(f"An error occurred: {str(e)}")
-
-
-
-
-
-# @frappe.whitelist(allow_guest=True)
-# def getInvoiceDetailsToZonalManager():
-#      query = """
-#         SELECT DISTINCT 
-#             si.custom_zonal_manager,
-#             e.personal_email,
-#             e.company_email,
-#             e.prefered_email,
-#             e.prefered_contact_email
-#         FROM `tabSales Invoice` si 
-#         left join `tabEmployee` e on e.employee=si.custom_zonal_manager
-#         WHERE 
-#             docstatus = 1 
-#             AND custom_zonal_manager IS NOT NULL 
-#     """   
-#     results = frappe.db.sql(query, as_dict=True)
-
-
-# @frappe.whitelist(allow_guest=True)
-# def getInvoiceDetailsToClusterManager():
-#      query = """
-#         SELECT DISTINCT  
-#             si.custom_cluster_manager,
-#             e.personal_email,
-#             e.company_email,
-#             e.prefered_email,
-#             e.prefered_contact_email
-#         FROM `tabSales Invoice` si 
-#         left join `tabEmployee` e on e.employee=si.custom_cluster_manager
-#         WHERE 
-#             docstatus = 1 
-#             AND custom_cluster_manager IS NOT NULL 
-#     """               
-#     results = frappe.db.sql(query, as_dict=True)  
-
 @frappe.whitelist(allow_guest=True)
-def getRegionalInvoice():
+def getInvoiceDetailsToRegionalManager():
+    try:
 
         query = """
             SELECT DISTINCT 
@@ -405,4 +337,168 @@ def getRegionalInvoice():
                 si.docstatus = 1  -- Only include confirmed (docstatus=1) invoices
                 AND si.custom_regional_manager IS NOT NULL
         """
-        return frappe.db.sql(query, as_dict=True)
+        regional_manager_details = frappe.db.sql(query, as_dict=True)
+
+        if not regional_manager_details:
+            frappe.log_error("No regional managers found in the system.", "Regional Manager Query")
+
+        #Loop through each regional manager to filter and send emails
+
+        for regional_manager in regional_manager_details:
+            # Filter data based on custom_regional_manager
+            filters = {
+                'custom_regional_manager': regional_manager.custom_regional_manager
+            }
+
+            # Step 3: Fetch columns and data (replace these with actual logic)
+            columns = get_columns()  
+            data = get_data(filters)  
+
+            if not data:
+                frappe.log_error(f"No data found for regional manager {regional_manager.custom_regional_manager}.")
+                continue  # Skip this iteration if no data is found for this manager
+
+            # Generate Excel file from data
+            excel_file = generate_excel(columns, data)  # Implement this function or logic to generate the Excel file
+
+            # Save the file to a private folder in Frappe
+            file_name = f"Sales_Invoice_Regional_Report_{regional_manager.custom_regional_manager}.xlsx"
+            file_data = excel_file.getvalue()
+            
+            # Create a file record in Frappe
+            file_doc = frappe.get_doc({
+                "doctype": "File",
+                "file_name": file_name,
+                "file_url": "/private/files/" + file_name,
+                "is_private": 1,
+                "content": file_data
+            })
+            file_doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+
+            file_path = file_doc.file_url
+
+            #Determine the preferred email based on prefered_contact_email
+
+        #     if regional_manager.prefered_contact_email == "Company Email":
+        #         recipient_email = regional_manager.company_email
+        #     elif regional_manager.prefered_contact_email == "Personal Email":
+        #         recipient_email = regional_manager.personal_email
+        #     else:
+        #         recipient_email = regional_manager.prefered_email  
+
+        #     if recipient_email:
+                
+        #         subject = "Sales Invoice  Report"
+        #         message = "Please find the attached report."
+
+        #         frappe.sendmail(
+        #             recipients=[recipient_email],
+        #             subject=subject,
+        #             message=message,
+        #             attachments=[{
+        #                 "fname": file_doc.file_name,
+        #                 "fcontent": file_data
+        #             }]
+        #         )
+
+        #     else:
+        #         frappe.log_error(f"Regional manager {regional_manager.custom_regional_manager} has no valid email address.")
+
+        # return {"status": "success", "message": "Reports sent successfully to all regional managers."}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), ("Failed to generate or send reports"))
+        return {"status": "error", "message": str(e)}
+
+
+# @frappe.whitelist(allow_guest=True)
+# def getInvoiceDetailsToZonalManager():
+#     try:
+
+#         query = """
+#             SELECT DISTINCT 
+#                 si.custom_zonal_manager,
+#                 e.personal_email,
+#                 e.company_email,
+#                 e.prefered_email,
+#                 e.prefered_contact_email
+#             FROM `tabSales Invoice` si 
+#             LEFT JOIN `tabEmployee` e ON e.employee = si.custom_zonal_manager
+#             WHERE 
+#                 si.docstatus = 1  -- Only include confirmed (docstatus=1) invoices
+#                 AND si.custom_regional_manager IS NOT NULL
+#         """
+#         zonal_manager_details = frappe.db.sql(query, as_dict=True)
+
+#         if not zonal_manager_details:
+#             frappe.log_error("No zonal managers found in the system.", "Zonal Manager Query")
+
+#         #Loop through each zonal manager to filter and send emails
+
+#         for zonal_manager in zonal_manager_details:
+#             # Filter data based on custom_regional_manager
+#             filters = {
+#                 'custom_zonal_manager': zonal_manager.custom_zonal_manager
+#             }
+
+#             # Step 3: Fetch columns and data (replace these with actual logic)
+#             columns = get_columns()  
+#             data = get_data(filters)  
+
+#             if not data:
+#                 frappe.log_error(f"No data found for zonal manager {zonal_manager.custom_zonal_manager}.")
+#                 continue  # Skip this iteration if no data is found for this manager
+
+#             # Generate Excel file from data
+#             excel_file = generate_excel(columns, data)  # Implement this function or logic to generate the Excel file
+
+#             # Save the file to a private folder in Frappe
+#             file_name = "Sales_Invoice_Report.xlsx"
+#             file_data = excel_file.getvalue()
+            
+#             # Create a file record in Frappe
+#             file_doc = frappe.get_doc({
+#                 "doctype": "File",
+#                 "file_name": file_name,
+#                 "file_url": "/private/files/" + file_name,
+#                 "is_private": 1,
+#                 "content": file_data
+#             })
+#             file_doc.insert(ignore_permissions=True)
+#             frappe.db.commit()
+
+#             file_path = file_doc.file_url
+
+#             #Determine the preferred email based on prefered_contact_email
+
+#         #     if zonal_manager.prefered_contact_email == "Company Email":
+#         #         recipient_email = zonal_manager.company_email
+#         #     elif zonal_manager.prefered_contact_email == "Personal Email":
+#         #         recipient_email = zonal_manager.personal_email
+#         #     else:
+#         #         recipient_email = zonal_manager.prefered_email  
+
+#         #     if recipient_email:
+                
+#         #         subject = "Sales Invoice Report"
+#         #         message = "Please find the attached report."
+
+#         #         frappe.sendmail(
+#         #             recipients=[recipient_email],
+#         #             subject=subject,
+#         #             message=message,
+#         #             attachments=[{
+#         #                 "fname": file_doc.file_name,
+#         #                 "fcontent": file_data
+#         #             }]
+#         #         )
+
+#         #     else:
+#         #         frappe.log_error(f"Regional manager {zonal_manager.custom_zonal_manager} has no valid email address.")
+
+#         # return {"status": "success", "message": "Reports sent successfully to all regional managers."}
+
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(),("Failed to generate or send reports"))
+#         return {"status": "error", "message": str(e)}
