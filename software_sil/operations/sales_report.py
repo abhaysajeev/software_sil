@@ -8,6 +8,9 @@ from frappe.utils import getdate
 import os
 from frappe.core.doctype.communication.email import make
 from datetime import datetime
+from openpyxl.styles import PatternFill, Border, Side, Font, Alignment
+import openpyxl.utils
+from openpyxl.utils import get_column_letter
 
 
 def validate_filters(filters):
@@ -65,13 +68,15 @@ def format_posting_date(posting_date):
 
 
 def get_data(filters):
-    # print(f"filters :{filters}")
+    print(f"filters :{filters}")
     try:
         data = []
         
         conditions = []
         if filters.custom_zonal_manager:
-            conditions.append(f"si.custom_zone = '{filters.custom_zonal_manager}'")
+            conditions.append(f"si.custom_zonal_manager	 = '{filters.custom_zonal_manager}'")
+        if filters.docstatus:
+            conditions.append(f"si.docstatus = '{filters.docstatus}'")
         if filters.custom_regional_manager:
             conditions.append(f"si.custom_regional_manager = '{filters.custom_regional_manager}'")
         if filters.custom_cluster:
@@ -122,6 +127,14 @@ def get_data(filters):
 
         if not invoices:
             frappe.throw(_("No Sales Invoices found for the given filters."))
+
+        for invoice in invoices:
+            if invoice['docstatus'] == 1:
+                invoice['docstatus'] = "Submitted"
+            if invoice['docstatus'] == 2:
+                invoice['docstatus'] = "Cancelled"
+
+                
 
         for idx, inv in enumerate(invoices, 1):
             items = frappe.get_all(
@@ -200,10 +213,33 @@ def calculate_totals(data):
         "net_total": float("{:.2f}".format(total_net_total))
     }
 
+
+
 def generate_excel(columns, data):
     wb = Workbook()
     ws = wb.active
     ws.title = "Sales Invoice Report"
+
+    # Define common styles
+    thin_border = Border(
+        left=Side(border_style="thin", color="000000"),
+        right=Side(border_style="thin", color="000000"),
+        top=Side(border_style="thin", color="000000"),
+        bottom=Side(border_style="thin", color="000000")
+    )
+
+    light_yellow = "FFFFE0"  # Light Yellow color code for background
+    light_green = "195e19"   # Light Green for header row
+    header_fill = PatternFill(start_color=light_green, end_color=light_green, fill_type="solid")
+    
+    # Specify Arial as the font family for consistency
+    header_font = Font(name="Arial", color="FFFFFF", bold=True)  # Bold font for headers
+    total_font = Font(name="Arial", bold=True)  # Bold font for total row
+
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # For total row
+
+    # Define left alignment
+    left_alignment = Alignment(horizontal="left")
 
     # Write headers
     headers = [col["label"] for col in columns]
@@ -212,6 +248,44 @@ def generate_excel(columns, data):
     # Write data rows
     for row in data:
         ws.append([row.get(col["fieldname"]) for col in columns])
+
+    # Apply background color and borders to all cells
+    for row in ws.iter_rows():
+        for cell in row:
+            cell.fill = PatternFill(start_color=light_yellow, end_color=light_yellow, fill_type="solid")
+            cell.border = thin_border
+
+    # Apply header styling
+    header_row = ws[1]  # First row is the header
+    for cell in header_row:
+        cell.fill = header_fill
+        cell.font = header_font  # Apply bold font to header
+
+    # Apply yellow background to the last row (total row) and make font bold
+    total_row_index = len(data) + 2  # Total row is after all data
+    total_row = ws[total_row_index]  # Get the total row
+    for cell in total_row:
+        cell.fill = yellow_fill
+        cell.border = thin_border  # Apply border to total row cells
+        cell.font = total_font  # Apply bold font to total row
+
+    # Align the "sr" column (first column) to the left
+    for row in ws.iter_rows(min_col=1, max_col=1, min_row=2, max_row=len(data) + 1):  # Adjusting for header
+        for cell in row:
+            cell.alignment = left_alignment  # Set left alignment for "sr" column
+
+    # Adjust column widths based on content
+    for col_num in range(1, len(columns) + 1):  # Loop through each column
+        max_length = 0
+        column = list(ws.iter_cols(min_col=col_num, max_col=col_num, min_row=1))  # Convert tuple to list
+        for cell in column[0]:  # Now column[0] is the actual list of cells in that column
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        
+        # Add some padding (extra space)
+        adjusted_width = max_length + 2  # Add extra space for readability
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = adjusted_width
+
 
     # Save Excel to a byte stream
     excel_file = BytesIO()
@@ -351,7 +425,22 @@ def attach_pdf_to_email(pdf_path, recipient_email):
         frappe.throw(f"An error occurred: {str(e)}")
 
 
-
+# @frappe.whitelist(allow_guest=True)
+# def getInvoiceDetailsToRegionalManager():
+#      query = """
+#         SELECT DISTINCT 
+#             si.custom_regional_manager,
+#             e.personal_email,
+#             e.company_email,
+#             e.prefered_email,
+#             e.prefered_contact_email
+#         FROM `tabSales Invoice` si 
+#         left join `tabEmployee` e on e.employee=si.custom_regional_manager
+#         WHERE 
+#             docstatus = 1  
+#             AND custom_regional_manager IS NOT NULL
+#     """ 
+#     results = frappe.db.sql(query, as_dict=True)
 
 
 # @frappe.whitelist(allow_guest=True)
@@ -388,52 +477,3 @@ def attach_pdf_to_email(pdf_path, recipient_email):
 #             AND custom_cluster_manager IS NOT NULL 
 #     """               
 #     results = frappe.db.sql(query, as_dict=True)  
-
-@frappe.whitelist(allow_guest=True)
-def getRegionalInvoice():
-
-        query = """
-            SELECT DISTINCT 
-                si.custom_regional_manager,
-                e.personal_email,
-                e.company_email,
-                e.prefered_email,
-                e.prefered_contact_email
-            FROM `tabSales Invoice` si 
-            LEFT JOIN `tabEmployee` e ON e.employee = si.custom_regional_manager
-            WHERE 
-                si.docstatus = 1  -- Only include confirmed (docstatus=1) invoices
-                AND si.custom_regional_manager IS NOT NULL
-        """
-        return frappe.db.sql(query, as_dict=True)
-
-
-@frappe.whitelist(allow_guest=True)
-def getZonalInvoice():
-
-        query = """
-            SELECT DISTINCT 
-                si.custom_zonal_manager,
-                e.personal_email,
-                e.company_email,
-                e.prefered_email,
-                e.prefered_contact_email
-            FROM `tabSales Invoice` si 
-            LEFT JOIN `tabEmployee` e ON e.employee = si.custom_zonal_manager
-            WHERE 
-                si.docstatus = 1  -- Only include confirmed (docstatus=1) invoices
-                AND si.custom_zonal_manager IS NOT NULL
-        """
-        return frappe.db.sql(query, as_dict=True)
-
-
-@frappe.whitelist(allow_guest=True)
-def getInvoice():
-    query = '''
-            select 
-            employee
-            from
-            `tabEmployee`
-             
-            '''
-    return frappe.db.sql(query, as_dict=True)
