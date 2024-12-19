@@ -1834,5 +1834,89 @@
   "status": "Open",
   "user": null,
   "workflow_state": "Draft"
+ },
+ {
+  "completed_by": "Administrator",
+  "completed_by_role": "Order Creator",
+  "docstatus": 0,
+  "doctype": "Workflow Action",
+  "modified": "2024-12-13 15:44:52.571826",
+  "name": "qh465qvo8m",
+  "permitted_roles": [
+   {
+    "parent": "qh465qvo8m",
+    "parentfield": "permitted_roles",
+    "parenttype": "Workflow Action",
+    "role": "Order Creator"
+   }
+  ],
+  "reference_doctype": "Cluster",
+  "reference_name": "Cluster 1",
+  "status": "Completed",
+  "user": null,
+  "workflow_state": "Draft"
+ },
+ {
+  "completed_by": "Administrator",
+  "completed_by_role": "Acc Manager",
+  "docstatus": 0,
+  "doctype": "Workflow Action",
+  "modified": "2024-12-13 15:48:01.096409",
+  "name": "9lt1n0ac6h",
+  "permitted_roles": [
+   {
+    "parent": "9lt1n0ac6h",
+    "parentfield": "permitted_roles",
+    "parenttype": "Workflow Action",
+    "role": "Acc Manager"
+   }
+  ],
+  "reference_doctype": "Cluster",
+  "reference_name": "Cluster 1",
+  "status": "Completed",
+  "user": null,
+  "workflow_state": "Pending Approval from Acc Manager"
+ },
+ {
+  "completed_by": "Administrator",
+  "completed_by_role": "Order Creator",
+  "docstatus": 0,
+  "doctype": "Workflow Action",
+  "modified": "2024-12-13 15:55:55.006865",
+  "name": "47465dcubg",
+  "permitted_roles": [
+   {
+    "parent": "47465dcubg",
+    "parentfield": "permitted_roles",
+    "parenttype": "Workflow Action",
+    "role": "Order Creator"
+   }
+  ],
+  "reference_doctype": "Cluster",
+  "reference_name": "cluster 2",
+  "status": "Completed",
+  "user": null,
+  "workflow_state": "Draft"
+ },
+ {
+  "completed_by": null,
+  "completed_by_role": null,
+  "docstatus": 0,
+  "doctype": "Workflow Action",
+  "modified": "2024-12-13 15:55:57.671500",
+  "name": "g7b1u3b263",
+  "permitted_roles": [
+   {
+    "parent": "g7b1u3b263",
+    "parentfield": "permitted_roles",
+    "parenttype": "Workflow Action",
+    "role": "Acc Manager"
+   }
+  ],
+  "reference_doctype": "Cluster",
+  "reference_name": "cluster 2",
+  "status": "Open",
+  "user": null,
+  "workflow_state": "Pending Approval from Acc Manager"
  }
 ]

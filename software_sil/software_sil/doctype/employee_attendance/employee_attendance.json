@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:employee_name",
+ "creation": "2024-12-17 12:30:37.112342",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_ndhj",
+  "employee_name",
+  "attendance_records",
+  "attendance",
+  "amended_from",
+  "employee_attendance",
+  "attendance_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_ndhj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "attendance_records",
+   "fieldtype": "HTML",
+   "label": "Attendance Records"
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "HTML Editor",
+   "label": "Attendance"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Attendance",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee_attendance",
+   "fieldtype": "Table",
+   "label": "Employee Attendance",
+   "options": "Attendance Checkin Data"
+  },
+  {
+   "fieldname": "attendance_date",
+   "fieldtype": "Date",
+   "label": "Attendance Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-12-17 17:08:00.191491",
+ "modified_by": "Administrator",
+ "module": "Software Sil",
+ "name": "Employee Attendance",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

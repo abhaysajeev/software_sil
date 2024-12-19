@@ -1,5 +1,7 @@
 import frappe
 
+from frappe.utils import get_datetime
+
 """
 tabSalaryAmtCalculator                            
 tabSalaryAmtMonths                                
@@ -312,3 +314,128 @@ def getInvoiceDetailsToRegionalManager():
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), _("Failed to generate or send reports"))
         return {"status": "error", "message": str(e)}
+
+# // Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+# // MIT License. See license.txt
+
+# class WorkflowOveride extends frappe.ui.form.States{
+
+# 	show_actions() {
+# 		var added = false;
+# 		var me = this;
+
+# 		// if the loaded doc is dirty, don't show workflow buttons
+# 		if (this.frm.doc.__unsaved === 1) {
+# 			return;
+# 		}
+
+# 		function has_approval_access(transition) {
+# 			let approval_access = false;
+# 			const user = frappe.session.user;
+# 			if (
+# 				user === "Administrator" ||
+# 				transition.allow_self_approval ||
+# 				user !== me.frm.doc.owner
+# 			) {
+# 				approval_access = true;
+# 			}
+# 			return approval_access;
+# 		}
+
+# 		frappe.workflow.get_transitions(this.frm.doc).then((transitions) => {
+# 			this.frm.page.clear_actions_menu();
+# 			transitions.forEach((d) => {
+# 				if (frappe.user_roles.includes(d.allowed) && has_approval_access(d)) {
+# 					added = true;
+# 					me.frm.page.add_action_item(__(d.action), function () {
+# 						console.log(d, me.frm.doc);
+# 						frappe.confirm(`Are you sure you want to <b class="text-primary">${d.action}<b>?`,
+# 							() => {
+# 								// action to perform if Yes is selected
+# 							//transition starts
+# 						// set the workflow_action for use in form scripts
+		
+# 						// frappe.dom.freeze();
+# 						// me.frm.selected_workflow_action = d.action;
+# 						// me.frm.script_manager.trigger("before_workflow_action").then(() => {
+# 						// 	frappe
+# 						// 		.xcall("frappe.model.workflow.apply_workflow", {
+# 						// 			doc: me.frm.doc,
+# 						// 			action: d.action,
+# 						// 		})
+# 						// 		.then((doc) => {
+# 						// 			frappe.model.sync(doc);
+# 						// 			me.frm.refresh();
+# 						// 			me.frm.selected_workflow_action = null;
+# 						// 			me.frm.script_manager.trigger("after_workflow_action");
+# 						// 		})
+# 						// 		.finally(() => {
+# 						// 			frappe.dom.unfreeze();
+# 						// 		});
+# 						// });
+# 						//transition end								
+
+# 							}, () => {
+# 								// action to perform if No is selected
+# 							})
+						
+						
+# 					});
+# 				}
+# 			});
+
+# 			this.setup_btn(added);
+# 		});
+# 	}
+
+
+
+
+# };
+
+# frappe.ui.form.States = WorkflowOveride;
+
+@frappe.whitelist(allow_guest=True)
+def getEmployee():
+    query = """
+
+        SELECT *
+        FROM `tabEmployee Checkin`
+        WHERE employee_name = "ALBIN S"
+
+            """
+    return frappe.db.sql(query, as_dict= True)
+
+@frappe.whitelist(allow_guest=True)
+def getTables():
+    query = """
+
+            select *
+            from `tabEmployee Attendance`
+            
+            
+            """
+    return frappe.db.sql(query, as_dict= True)
+
+import frappe
+from frappe.utils import get_datetime
+
+@frappe.whitelist(allow_guest=True)
+def get_attendance(employee_name, date):
+    # Convert the selected date to datetime object for filtering
+    start_datetime = get_datetime(date + " 00:00:00")
+    end_datetime = get_datetime(date + " 23:59:59")
+
+    # Query to fetch attendance records for the employee on the selected date
+    query = """
+        SELECT `employee`, `log_type`, `time`, `shift_start`, `shift_end`
+        FROM `tabEmployee Checkin`
+        WHERE `employee` = %s
+        AND `time` BETWEEN %s AND %s
+        ORDER BY `shift_start` ASC, `shift_end` ASC, `time` ASC
+    """
+
+    # Execute the query with the parameters
+    attendance_records = frappe.db.sql(query, (employee_name, start_datetime, end_datetime), as_dict=True)
+
+    return attendance_records

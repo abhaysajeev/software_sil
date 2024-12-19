@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-12-18 09:51:40.178427",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_wjq6",
+  "employee_name",
+  "attendance_date",
+  "attendance_details",
+  "amended_from",
+  "attendance_record"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_wjq6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "<div>\n    <h3>Attendance Details for ALBIN S - 2024-11-19</h3>\n    \n    <p><strong>Total Working Hours:</strong> {{ attendance_data.total_working_hours }}</p>\n    \n    <h4>Sessions:</h4>\n    <ul>\n        {% for session in attendance_data.attendance_sessions %}\n            <li>\n                <strong>{{ session.session }}:</strong><br>\n                <span><strong>In Time:</strong> {{ session.in_time }}</span><br>\n                <span><strong>Out Time:</strong> {{ session.out_time }}</span><br>\n                <span><strong>Working Hours:</strong> {{ session.working_hours }}</span>\n            </li>\n        {% endfor %}\n    </ul>\n</div>\n",
+   "fieldname": "attendance_details",
+   "fieldtype": "HTML",
+   "label": "Attendance Details"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Link",
+   "label": "Employee ",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "attendance_date",
+   "fieldtype": "Datetime",
+   "label": "Attendance Date"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Attendance Test",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "attendance_record",
+   "fieldtype": "Table",
+   "label": "Attendance Record",
+   "options": "Employee Attendance Child"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-12-18 12:17:51.171998",
+ "modified_by": "Administrator",
+ "module": "Software Sil",
+ "name": "Employee Attendance Test",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
