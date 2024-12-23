@@ -1,7 +1,9 @@
 import frappe
-
+from frappe import _
 from frappe.utils import get_datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+
+
 
 
 @frappe.whitelist(allow_guest=True)
@@ -83,9 +85,55 @@ def get_attendance(employee_name, date):
 @frappe.whitelist(allow_guest=True)
 def attendance_test():
     query = """
-            select 
-            `name`
-            from `tabTeam`
-
+            SELECT *
+            FROM `tabAttendance`
+            WHERE 'employee_namE 'ALBIN S'
+            LIMIT 10
             """
     return frappe.db.sql(query, as_dict=True)
+
+
+
+
+@frappe.whitelist(allow_guest=True)
+def get_weekly_average(employee_name, selected_date):
+    # Convert the selected date string to a datetime object and get the date part
+    selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
+    
+    # Get the start of the week (Monday) and end of the week (Sunday)
+    start_of_week = selected_date - timedelta(days=selected_date.weekday())  # Monday of the week
+    end_of_week = start_of_week + timedelta(days=6)  # Sunday of the week
+    
+    # Query the `tabAttendance` table for the selected employee and week date range
+    results = frappe.get_all(
+        'Attendance',
+        filters={
+            'employee_name': employee_name,
+            'attendance_date': ['between', [start_of_week, end_of_week]]
+        },
+        fields=['attendance_date', 'working_hours']
+    )
+
+    # Initialize response structure
+    response = {
+        'employee_name': employee_name,
+        'week_start_date': start_of_week,
+        'week_end_date': end_of_week
+    }
+
+    # Calculate the total working hours and number of working days
+    if results:
+        total_hours = sum(record['working_hours'] for record in results)
+        number_of_working_days = len(results)
+        average_hours = total_hours / number_of_working_days if number_of_working_days > 0 else 0
+
+        response['total_working_hours'] = total_hours
+        response['number_of_working_days'] = number_of_working_days
+        response['weekly_average'] = average_hours
+    else:
+        response['total_working_hours'] = 0
+        response['number_of_working_days'] = 0
+        response['weekly_average'] = 0
+
+    # Return the response as a dictionary
+    return response
